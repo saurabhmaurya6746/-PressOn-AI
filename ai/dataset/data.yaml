@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['Fingernail']
+
+roboflow:
+  workspace: fingernail-ztwys
+  project: fingernail-segmentation-yy1l7
+  version: 11
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/fingernail-ztwys/fingernail-segmentation-yy1l7/dataset/11

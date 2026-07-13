@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <!-- Main UI Card -->
+            <div class="card shadow border-0 rounded-4 overflow-hidden">
+                <!-- Premium Header Branding -->
+                <div class="bg-primary p-4 text-center text-white">
+                    <h2 class="fw-bold mb-1">💅 PressOn AI</h2>
+                    <p class="mb-0 text-white-50 small">Get instant, perfectly scaled custom nail measurements</p>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    
+                    <!-- Quick Visual Guide Card -->
+                    <div class="card bg-light border-0 rounded-3 mb-4">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold text-dark mb-2">📸 Photo Instructions for Perfect Fit:</h6>
+                            <ul class="small text-secondary mb-0 ps-3">
+                                <li class="mb-1">Place a <strong>₹10 Coin</strong> flat on a surface right next to your hand.</li>
+                                <li class="mb-1">Keep your hand flat and fingers slightly spread apart.</li>
+                                <li>Take the photo <strong>directly from above</strong> under clear lighting.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Toggle Buttons for Upload vs Camera -->
+                    <div class="d-flex g-2 mb-4 justify-content-center">
+                        <button type="button" id="btnModeUpload" class="btn btn-outline-primary active me-2 fw-semibold w-50" onclick="switchMode('upload')">📁 Upload Image</button>
+                        <button type="button" id="btnModeCamera" class="btn btn-outline-primary fw-semibold w-50" onclick="switchMode('camera')">📸 Open Live Camera</button>
+                    </div>
+
+                    <!-- Interactive Upload Form -->
+                    <form method="POST" enctype="multipart/form-data" id="mainForm">
+                        {% csrf_token %}
+                        
+                        <!-- SECTION 1: Standard File Upload -->
+                        <div id="uploadSection" class="mb-4">
+                            <label class="form-label fw-bold text-secondary mb-2">Choose From Gallery</label>
+                            <input 
+                                class="form-control form-control-lg border-2 border-dashed border-primary rounded-3 text-center" 
+                                type="file" 
+                                id="handImageFile" 
+                                name="image" 
+                                accept="image/*"
+                                style="padding: 2.5rem 1rem; border-style: dashed !important;"
+                            >
+                        </div>
+
+                        <!-- SECTION 2: Live Camera View (Hidden by Default) -->
+                        <div id="cameraSection" class="mb-4 d-none text-center">
+                            <label class="form-label fw-bold text-secondary mb-2 d-block">Live Camera View</label>
+                            <div class="bg-dark rounded-3 overflow-hidden position-relative mb-3 mx-auto" style="max-width: 100%; height: 300px;">
+                                <video id="webcam" autoplay playsinline class="w-100 h-100" style="object-fit: cover;"></video>
+                                <canvas id="canvas" class="d-none"></canvas>
+                            </div>
+                            <button type="button" class="btn btn-success fw-bold px-4 py-2 rounded-pill shadow-sm" onclick="takeSnapshot()">📸 Click Photo</button>
+                            
+                            <!-- Captured Preview Thumbnail -->
+                            <div id="snapPreviewBlock" class="mt-3 d-none">
+                                <span class="badge bg-success mb-2">Captured Successfully!</span>
+                                <img id="snapPreview" class="img-fluid rounded border border-2 border-success" style="max-height: 150px;">
+                            </div>
+                        </div>
+
+                        <!-- Hidden File Input for Webcam Data -->
+                        <input type="hidden" name="webcam_image" id="webcamDataInput">
+                        
+                        <!-- Subtle Coin Reference Hint -->
+                        <div class="form-text text-center text-muted mt-2">
+                            <span class="badge bg-warning text-dark me-1">Required</span> 
+                            Make sure the <strong>₹10 reference coin</strong> is clearly visible.
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm rounded-3 py-3">
+                                ✨ Run AI Sizing Analysis
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+            <!-- Footer Branding Disclaimer -->
+            <p class="text-center text-muted small mt-4">
+                Powered by Advanced Computer Vision • Safe & Secure
+            </p>
+
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript Engine for Handling Modes and Webcam Stream -->
+<script>
+    let stream = null;
+
+    function switchMode(mode) {
+        const uploadSec = document.getElementById('uploadSection');
+        const cameraSec = document.getElementById('cameraSection');
+        const btnUpload = document.getElementById('btnModeUpload');
+        const btnCamera = document.getElementById('btnModeCamera');
+        const fileInput = document.getElementById('handImageFile');
+
+        if (mode === 'camera') {
+            uploadSec.classList.add('d-none');
+            cameraSec.classList.remove('d-none');
+            btnCamera.classList.add('active');
+            btnUpload.classList.remove('active');
+            fileInput.required = false; // Remove required restriction for file since camera is active
+            
+            // Start Web Camera
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function (s) {
+                    stream = s;
+                    document.getElementById('webcam').srcObject = stream;
+                })
+                .catch(function (err) {
+                    alert("Camera access denied or not available: " + err);
+                });
+        } else {
+            uploadSec.classList.remove('d-none');
+            cameraSec.classList.add('d-none');
+            btnUpload.classList.add('active');
+            btnCamera.classList.remove('active');
+            fileInput.required = true;
+
+            // Stop Web Camera if running
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        }
+    }
+
+    function takeSnapshot() {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Match canvas sizes with video stream width/height
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw image frame to canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Convert canvas data to Base64 image string
+        const base64Image = canvas.toDataURL('image/jpeg');
+        
+        // Inject to hidden input
+        document.getElementById('webcamDataInput').value = base64Image;
+        
+        // Show preview thumbnail to user
+        document.getElementById('snapPreview').src = base64Image;
+        document.getElementById('snapPreviewBlock').classList.remove('d-none');
+    }
+</script>
+
+<style>
+    .border-dashed {
+        border-style: dashed !important;
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}

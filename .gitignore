@@ -1,0 +1,34 @@
+# ==========================================
+# PressOn AI - Official .gitignore File
+# ==========================================
+
+# 1. Python & Django Virtual Environment
+venv/
+ENV/
+.env
+env/
+Active/
+
+# 2. Django Local Database (Render par fresh database banta hai)
+db.sqlite3
+
+# 3. Media & Uploaded Files (User testing images ko block karne ke liye)
+media/
+
+# 4. AI Models / Weights / Runs (Large files up to 6MB+ strictly ignored)
+*.pt
+runs/
+
+# 5. Python Cache files (Faltu bytecode files compiled automatically)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.htmlcov/
+
+# 6. IDE / OS Specific files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
