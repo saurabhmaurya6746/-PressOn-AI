@@ -6,3 +6,4 @@ pillow>=10.0.0
 scipy>=1.11.0
 gunicorn>=21.2.0
 whitenoise>=6.5.0
+ultralytics==8.3.0
