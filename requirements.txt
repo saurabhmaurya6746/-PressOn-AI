@@ -1,8 +1,8 @@
 django>=4.2,<5.2
-numpy>=2.1.0
-opencv-python-headless>=4.8.0
+mediapipe==0.10.14
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
 pillow>=10.0.0
 scipy>=1.11.0
 gunicorn>=21.2.0
-mediapipe>=0.10.0
 whitenoise>=6.5.0
