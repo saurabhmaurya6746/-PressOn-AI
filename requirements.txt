@@ -1,4 +1,6 @@
+django>=4.2,<5.2
 numpy==2.5.1
-opencv-python==5.0.0.93
+opencv-python-headless==5.0.0.93
 pillow==12.3.0
 scipy==1.18.0
+gunicorn==22.0.0
