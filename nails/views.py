@@ -1,21 +1,18 @@
 import os
+import base64
+import requests  # FastAPI से बात करने के लिए
 from django.conf import settings
 from django.shortcuts import render, redirect
+from django.core.files.base import ContentFile
 from .models import HandMeasurement
 
-# AI & Utils Imports
-from utils.hand_detector import detect_hand
-from ai.inference import predict_nails
-from utils.finger_identifier import identify_fingers
-from utils.coin_detector import get_pixel_to_mm_ratio  # 🔴 Coin Tracker Import
-
-import base64
-from django.core.files.base import ContentFile
+# 💥 अपनी नई FastAPI का URL यहाँ डालो (आखिर में स्लैश / लगाना मत भूलना)
+FASTAPI_URL = os.environ.get("FASTAPI_URL", "https://presson-ai-backend.onrender.com/process-image/")
 
 def home(request):
     if request.method == "POST":
         image = request.FILES.get("image")
-        webcam_data = request.POST.get("webcam_image") # Live camera base64 data
+        webcam_data = request.POST.get("webcam_image")  # Live camera base64 data
 
         # Agar user ne Live Camera se photo kheenchi hai
         if webcam_data:
@@ -29,70 +26,52 @@ def home(request):
 
     return render(request, "index.html")
 
-# views.py (Updated with Fail-Safe Alert Flag)
-import os
-import cv2
-from django.conf import settings
-from django.shortcuts import render, redirect
-from .models import HandMeasurement
 
-# AI & Utils Imports
-from utils.hand_detector import detect_hand
-from ai.inference import predict_nails
-from utils.finger_identifier import identify_fingers
-from utils.coin_detector import get_pixel_to_mm_ratio
-
-# views.py me result function ka updated hissa
 def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
     image_path = obj.image.path
 
-    processed_filename = "processed_" + os.path.basename(image_path)
-    output_path = os.path.join(settings.MEDIA_ROOT, processed_filename)
-
-    landmarks = detect_hand(image_path, output_path)
-
-    # 1. Ratio aur Coin Data fetch kiya
-    pixels_per_mm, coin_data = get_pixel_to_mm_ratio(image_path, real_coin_diameter_mm=27.0)
-
-    result_data = predict_nails(image_path)
-    target_img_path = result_data.get("processed_image", output_path)
-
-    # Default values
-    coin_detected = True
+    # डिफॉल्ट वैल्यूज
+    coin_detected = False
     identified_fingers = []
-
-    # 2. 🔴 CHECK: Agar coin detect hua hai, tabhi aage badhein
-    if coin_data:
-        # Draw coin circle
-        if os.path.exists(target_img_path):
-            processed_img = cv2.imread(target_img_path)
-            if processed_img is not None:
-                cv2.circle(processed_img, coin_data["center"], coin_data["radius"], (255, 0, 0), 3)
-                cv2.circle(processed_img, coin_data["center"], 4, (0, 0, 255), -1)
-                cv2.putText(processed_img, f"Coin: {coin_data['diameter_px']}px", 
-                            (coin_data["center"][0] - coin_data["radius"], coin_data["center"][1] - coin_data["radius"] - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
-                cv2.imwrite(target_img_path, processed_img)
-
-        # Pixels ko real MM me convert karein
-        if result_data and "measurements" in result_data:
-            for nail in result_data["measurements"]:
-                nail["width_mm"] = round(nail["width_px"] / pixels_per_mm, 2)
-                nail["height_mm"] = round(nail["height_px"] / pixels_per_mm, 2)
-
-        # Sizing aur identification logic run karein
-        identified_fingers = identify_fingers(landmarks, result_data["measurements"])
-    else:
-        # Coin nahi mila
-        coin_detected = False
-
     processed_image_url = None
-    if result_data.get("processed_image"):
-        relative_path = os.path.relpath(result_data["processed_image"], settings.MEDIA_ROOT)
-        processed_image_url = settings.MEDIA_URL + relative_path
+    landmark_count = 0
+    result_data = {"status": "failed"}
 
-    landmark_count = len(landmarks) if landmarks else 0
+    try:
+        # 1. इमेज को बाइनरी मोड में ओपन करना
+        with open(image_path, 'rb') as f:
+            file_data = f.read()
+        
+        # FastAPI को भेजने के लिए पेलोड तैयार करना
+        files = {
+            'file': (os.path.basename(image_path), file_data, 'image/jpeg')
+        }
+
+        # 2. 🚀 इमेज को सीधा FastAPI सर्वर पर भेजना (बिना किसी लोकल रैम लोड के)
+        response = requests.post(FASTAPI_URL, files=files, timeout=60)
+        
+        if response.status_code == 200:
+            result_data = response.json()
+            
+            # FastAPI से आया डेटा पार्स करना
+            if result_data.get("status") == "success":
+                coin_detected = result_data.get("coin_detected", True)
+                identified_fingers = result_data.get("identified_fingers", [])
+                landmark_count = result_data.get("landmark_count", 0)
+                
+                # अगर FastAPI ने प्रोसेस की हुई इमेज का base64 या URL दिया है
+                if result_data.get("processed_image"):
+                    processed_image_url = result_data.get("processed_image")
+        else:
+            print(f"FastAPI Server Error Status: {response.status_code}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Could not connect to FastAPI Server: {e}")
+
+    # अगर प्रोसेसिंग फ़ेल हुई या इमेज नहीं मिली, तो ओरिजिनल इमेज ही दिखा देंगे
+    if not processed_image_url:
+        processed_image_url = obj.image.url
 
     context = {
         "obj": obj,
