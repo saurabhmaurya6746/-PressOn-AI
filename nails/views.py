@@ -6,13 +6,15 @@ from django.shortcuts import render, redirect
 from django.core.files.base import ContentFile
 from .models import HandMeasurement
 
+# 🚀 FastAPI URL Definition
 FASTAPI_URL = os.environ.get("FASTAPI_URL", "https://presson-ai-backend.onrender.com/process-image/")
 
 def home(request):
     if request.method == "POST":
         image = request.FILES.get("image")
-        webcam_data = request.POST.get("webcam_image")
+        webcam_data = request.POST.get("webcam_image")  # Live camera base64 data
 
+        # Agar user ne Live Camera se photo kheenchi hai
         if webcam_data:
             try:
                 format, imgstr = webcam_data.split(';base64,') 
@@ -26,49 +28,60 @@ def home(request):
             return redirect("result", pk=obj.id)
 
     return render(request, "index.html")
-
-
 def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
     image_path = obj.image.path
 
+    # Default values setup
     coin_detected = False
     identified_fingers = []
     processed_image_url = None
     landmark_count = 0
+    result_data = {"status": "failed", "message": "FastAPI timeout or crash"}
 
     try:
+        # 1. Image ko binary mode me open karna
         with open(image_path, 'rb') as f:
             file_data = f.read()
-
+        
         files = {
             'file': (os.path.basename(image_path), file_data, 'image/jpeg')
         }
 
+        # 🚀 timeout को 60 से घटाकर 25 सेकंड करो ताकि Gunicorn खुद किल न हो
         response = requests.post(FASTAPI_URL, files=files, timeout=25)
+        
         print(f"DEBUG: FastAPI Response Status Code: {response.status_code}")
-
+        
         if response.status_code == 200:
             res_json = response.json()
             if res_json.get("status") == "success":
-                coin_detected = res_json.get("coin_detected", False)
-                landmark_count = res_json.get("landmark_count", 0)
-                identified_fingers = res_json.get("identified_fingers", [])
-                processed_image_url = res_json.get("processed_image", obj.image.url)
+                coin_detected = res_json.get("coin_detected", True)
+                landmark_count = res_json.get("landmark_count", 21)
+                
+                # सीधे FastAPI से आ रहे एलाइन्ड डेटा को असाइन करो
+                if res_json.get("identified_fingers"):
+                    identified_fingers = res_json.get("identified_fingers")
+                
+                if res_json.get("processed_image"):
+                    processed_image_url = res_json.get("processed_image")
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
     except Exception as e:
+        # 💥 यहाँ हर तरह के Exception को कैच कर लिया ताकि Django 500 Error न दे
         print(f"DEBUG: Handled Exception during FastAPI call: {e}")
 
+    # Fallback to original image if processing failed
     if not processed_image_url:
         processed_image_url = obj.image.url
 
     context = {
-        "obj": obj,
-        "identified_fingers": identified_fingers,
-        "processed_image": processed_image_url,
-        "landmark_count": landmark_count,
-        "coin_detected": coin_detected,
-    }
+    "obj": obj,
+    "identified_fingers": identified_fingers,
+    "processed_image": processed_image_url, # यह पक्का करो
+    "landmark_count": landmark_count,
+    "coin_detected": coin_detected,
+}
+
     return render(request, "result.html", context)
