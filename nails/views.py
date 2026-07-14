@@ -28,31 +28,28 @@ def home(request):
             return redirect("result", pk=obj.id)
 
     return render(request, "index.html")
-
-
 def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
     image_path = obj.image.path
 
-    # Default values setup setup
+    # Default values setup
     coin_detected = False
     identified_fingers = []
     processed_image_url = None
     landmark_count = 0
-    result_data = {"status": "failed"}
+    result_data = {"status": "failed", "message": "FastAPI timeout or crash"}
 
     try:
         # 1. Image ko binary mode me open karna
         with open(image_path, 'rb') as f:
             file_data = f.read()
         
-        # FastAPI payload set up
         files = {
             'file': (os.path.basename(image_path), file_data, 'image/jpeg')
         }
 
-        # 2. 🚀 FastAPI Server par request fire karna (Timeout: 60 Seconds)
-        response = requests.post(FASTAPI_URL, files=files, timeout=60)
+        # 🚀 timeout को 60 से घटाकर 25 सेकंड करो ताकि Gunicorn खुद किल न हो
+        response = requests.post(FASTAPI_URL, files=files, timeout=25)
         
         print(f"DEBUG: FastAPI Response Status Code: {response.status_code}")
         
@@ -65,14 +62,14 @@ def result(request, pk):
                 identified_fingers = result_data.get("identified_fingers", [])
                 landmark_count = result_data.get("landmark_count", 0)
                 
-                # Base64 Processed Image handle karna
                 if result_data.get("processed_image"):
                     processed_image_url = result_data.get("processed_image")
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
-    except requests.exceptions.RequestException as e:
-        print(f"Could not connect to FastAPI Server: {e}")
+    except Exception as e:
+        # 💥 यहाँ हर तरह के Exception को कैच कर लिया ताकि Django 500 Error न दे
+        print(f"DEBUG: Handled Exception during FastAPI call: {e}")
 
     # Fallback to original image if processing failed
     if not processed_image_url:
