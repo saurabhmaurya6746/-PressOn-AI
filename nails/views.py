@@ -1,12 +1,12 @@
 import os
 import base64
-import requests  # FastAPI से बात करने के लिए
+import requests
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.core.files.base import ContentFile
 from .models import HandMeasurement
 
-# 💥 अपनी नई FastAPI का URL यहाँ डालो (आखिर में स्लैश / लगाना मत भूलना)
+# 🚀 FastAPI URL Definition
 FASTAPI_URL = os.environ.get("FASTAPI_URL", "https://presson-ai-backend.onrender.com/process-image/")
 
 def home(request):
@@ -16,9 +16,12 @@ def home(request):
 
         # Agar user ne Live Camera se photo kheenchi hai
         if webcam_data:
-            format, imgstr = webcam_data.split(';base64,') 
-            ext = format.split('/')[-1] 
-            image = ContentFile(base64.b64decode(imgstr), name=f"captured_hand.{ext}")
+            try:
+                format, imgstr = webcam_data.split(';base64,') 
+                ext = format.split('/')[-1] 
+                image = ContentFile(base64.b64decode(imgstr), name=f"captured_hand.{ext}")
+            except Exception as e:
+                print(f"Webcam data parsing error: {e}")
 
         if image:
             obj = HandMeasurement.objects.create(image=image)
@@ -31,7 +34,7 @@ def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
     image_path = obj.image.path
 
-    # डिफॉल्ट वैल्यूज
+    # Default values setup setup
     coin_detected = False
     identified_fingers = []
     processed_image_url = None
@@ -39,28 +42,30 @@ def result(request, pk):
     result_data = {"status": "failed"}
 
     try:
-        # 1. इमेज को बाइनरी मोड में ओपन करना
+        # 1. Image ko binary mode me open karna
         with open(image_path, 'rb') as f:
             file_data = f.read()
         
-        # FastAPI को भेजने के लिए पेलोड तैयार करना
+        # FastAPI payload set up
         files = {
             'file': (os.path.basename(image_path), file_data, 'image/jpeg')
         }
 
-        # 2. 🚀 इमेज को सीधा FastAPI सर्वर पर भेजना (बिना किसी लोकल रैम लोड के)
+        # 2. 🚀 FastAPI Server par request fire karna (Timeout: 60 Seconds)
         response = requests.post(FASTAPI_URL, files=files, timeout=60)
+        
+        print(f"DEBUG: FastAPI Response Status Code: {response.status_code}")
         
         if response.status_code == 200:
             result_data = response.json()
+            print(f"DEBUG: FastAPI Response Data: {result_data}")
             
-            # FastAPI से आया डेटा पार्स करना
             if result_data.get("status") == "success":
-                coin_detected = result_data.get("coin_detected", True)
+                coin_detected = result_data.get("coin_detected", False)
                 identified_fingers = result_data.get("identified_fingers", [])
                 landmark_count = result_data.get("landmark_count", 0)
                 
-                # अगर FastAPI ने प्रोसेस की हुई इमेज का base64 या URL दिया है
+                # Base64 Processed Image handle karna
                 if result_data.get("processed_image"):
                     processed_image_url = result_data.get("processed_image")
         else:
@@ -69,7 +74,7 @@ def result(request, pk):
     except requests.exceptions.RequestException as e:
         print(f"Could not connect to FastAPI Server: {e}")
 
-    # अगर प्रोसेसिंग फ़ेल हुई या इमेज नहीं मिली, तो ओरिजिनल इमेज ही दिखा देंगे
+    # Fallback to original image if processing failed
     if not processed_image_url:
         processed_image_url = obj.image.url
 
