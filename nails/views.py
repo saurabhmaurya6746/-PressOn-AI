@@ -28,7 +28,7 @@ def home(request):
             return redirect("result", pk=obj.id)
 
     return render(request, "index.html")
-    def result(request, pk):
+ def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
     image_path = obj.image.path
 
@@ -58,17 +58,17 @@ def home(request):
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
-    except Exception as e:
-        print(f"DEBUG: Handled Exception during FastAPI call: {e}")
-
-    if not processed_image_url:
-        processed_image_url = obj.image.url
-
-    context = {
-        "obj": obj,
-        "identified_fingers": identified_fingers,
-        "processed_image": processed_image_url,
-        "landmark_count": landmark_count,
-        "coin_detected": coin_detected,
-    }
-    return render(request, "result.html", context)
+        except Exception as e:
+            print(f"DEBUG: Handled Exception during FastAPI call: {e}")
+    
+        if not processed_image_url:
+            processed_image_url = obj.image.url
+    
+        context = {
+            "obj": obj,
+            "identified_fingers": identified_fingers,
+            "processed_image": processed_image_url,
+            "landmark_count": landmark_count,
+            "coin_detected": coin_detected,
+        }
+        return render(request, "result.html", context)
