@@ -6,15 +6,13 @@ from django.shortcuts import render, redirect
 from django.core.files.base import ContentFile
 from .models import HandMeasurement
 
-# 🚀 FastAPI URL Definition
 FASTAPI_URL = os.environ.get("FASTAPI_URL", "https://presson-ai-backend.onrender.com/process-image/")
 
 def home(request):
     if request.method == "POST":
         image = request.FILES.get("image")
-        webcam_data = request.POST.get("webcam_image")  # Live camera base64 data
+        webcam_data = request.POST.get("webcam_image")
 
-        # Agar user ne Live Camera se photo kheenchi hai
         if webcam_data:
             try:
                 format, imgstr = webcam_data.split(';base64,') 
