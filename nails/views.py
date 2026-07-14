@@ -75,11 +75,8 @@ def result(request, pk):
         print(f"DEBUG: Handled Exception during FastAPI call: {e}")
 
     # Fallback: अगर FastAPI से इमेज नहीं आई, या खाली स्ट्रिंग आई
-    if not processed_image_url or processed_image_url == "":
-        try:
-            processed_image_url = obj.image.url
-        except ValueError:
-            processed_image_url = "" # अगर ओरिजिनल इमेज भी न मिले
+    if not processed_image_url:
+    processed_image_url = original_image_url
 
     # 🚨 यहाँ मैंने obj.image.url को भी एक वेरिएबल में ले लिया है ताकि HTML में एरर न आए
     original_image_url = ""
