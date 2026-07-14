@@ -69,19 +69,30 @@ def result(request, pk):
             print(f"FastAPI Server Error Status: {response.status_code}")
 
     except Exception as e:
-        # 💥 यहाँ हर तरह के Exception को कैच कर लिया ताकि Django 500 Error न दे
         print(f"DEBUG: Handled Exception during FastAPI call: {e}")
 
-    # Fallback to original image if processing failed
-    if not processed_image_url:
-        processed_image_url = obj.image.url
+    # Fallback: अगर FastAPI से इमेज नहीं आई, या खाली स्ट्रिंग आई
+    if not processed_image_url or processed_image_url == "":
+        try:
+            processed_image_url = obj.image.url
+        except ValueError:
+            processed_image_url = "" # अगर ओरिजिनल इमेज भी न मिले
+
+    # 🚨 यहाँ मैंने obj.image.url को भी एक वेरिएबल में ले लिया है ताकि HTML में एरर न आए
+    original_image_url = ""
+    try:
+        original_image_url = obj.image.url
+    except ValueError:
+        pass
 
     context = {
-    "obj": obj,
-    "identified_fingers": identified_fingers,
-    "processed_image": processed_image_url, # यह पक्का करो
-    "landmark_count": landmark_count,
-    "coin_detected": coin_detected,
-}
+        "obj": obj,
+        "original_image_url": original_image_url, # 👈 इसे भी पास कर दिया
+        "identified_fingers": identified_fingers,
+        "processed_image": processed_image_url, 
+        "landmark_count": landmark_count,
+        "coin_detected": coin_detected,
+    }
 
     return render(request, "result.html", context)
+# 🚨 वो फालतू का '}' ब्रैकेट हटा दिया है
