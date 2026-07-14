@@ -64,7 +64,10 @@ def result(request, pk):
                     identified_fingers = res_json.get("identified_fingers")
                 
                 if res_json.get("processed_image"):
-                    processed_image_url = res_json.get("processed_image")
+                    processed_image_url = res_json.get("processed_image", "")
+
+                    if processed_image_url and not processed_image_url.startswith("data:image"):
+                        processed_image_url = "data:image/jpeg;base64," + processed_image_url
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
