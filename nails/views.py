@@ -54,16 +54,17 @@ def result(request, pk):
         print(f"DEBUG: FastAPI Response Status Code: {response.status_code}")
         
         if response.status_code == 200:
-            result_data = response.json()
-            print(f"DEBUG: FastAPI Response Data: {result_data}")
-            
-            if result_data.get("status") == "success":
-                coin_detected = result_data.get("coin_detected", False)
-                identified_fingers = result_data.get("identified_fingers", [])
-                landmark_count = result_data.get("landmark_count", 0)
+            res_json = response.json()
+            if res_json.get("status") == "success":
+                coin_detected = res_json.get("coin_detected", True)
+                landmark_count = res_json.get("landmark_count", 21)
                 
-                if result_data.get("processed_image"):
-                    processed_image_url = result_data.get("processed_image")
+                # सीधे FastAPI से आ रहे एलाइन्ड डेटा को असाइन करो
+                if res_json.get("identified_fingers"):
+                    identified_fingers = res_json.get("identified_fingers")
+                
+                if res_json.get("processed_image"):
+                    processed_image_url = res_json.get("processed_image")
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
