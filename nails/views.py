@@ -65,6 +65,9 @@ def result(request, pk):
                 
                 if res_json.get("processed_image"):
                     processed_image_url = res_json.get("processed_image")
+                else:
+                    processed_image_url = obj.image.url
+
         else:
             print(f"FastAPI Server Error Status: {response.status_code}")
 
