@@ -77,12 +77,11 @@ def result(request, pk):
         processed_image_url = obj.image.url
 
     context = {
-        "obj": obj,
-        "result": result_data,
-        "identified_fingers": identified_fingers,
-        "processed_image": processed_image_url,
-        "landmark_count": landmark_count,
-        "coin_detected": coin_detected,
-    }
+    "obj": obj,
+    "identified_fingers": identified_fingers,
+    "processed_image": processed_image_url, # यह पक्का करो
+    "landmark_count": landmark_count,
+    "coin_detected": coin_detected,
+}
 
     return render(request, "result.html", context)
