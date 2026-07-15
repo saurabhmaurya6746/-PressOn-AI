@@ -123,23 +123,14 @@ def result(request, pk):
     if not processed_image_url:
         processed_image_url = original_image_url
 
+    print("Image Present:", bool(processed_image_url))
     context = {
-
         "obj": obj,
-
         "original_image_url": original_image_url,
-
         "processed_image": processed_image_url,
-
-        "coin_detected": coin_detected,
-
-        "landmark_count": landmark_count,
-
         "identified_fingers": identified_fingers,
+        "landmark_count": landmark_count,
+        "coin_detected": coin_detected,
     }
-
-    return render(
-        request,
-        "result.html",
-        context
-    )
+    
+    return render(request, "result.html", context)
