@@ -86,6 +86,9 @@ def result(request, pk):
         original_image_url = obj.image.url
     except ValueError:
         pass
+    print("Image Path:", image_path)
+    print("Image Exists:", os.path.exists(image_path))
+    print("Image URL:", obj.image.url)
     print("Coin:", res_json.get("coin_detected"))
     print("Landmarks:", res_json.get("landmark_count"))
     print("Fingers:", res_json.get("identified_fingers"))
