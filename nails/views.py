@@ -90,6 +90,8 @@ def result(request, pk):
     print("Landmarks:", res_json.get("landmark_count"))
     print("Fingers:", res_json.get("identified_fingers"))
     print("Image Present:", bool(res_json.get("processed_image")))
+    print(result.original_image)
+    print(result.original_image.url)
     context = {
         "obj": obj,
         "original_image_url": original_image_url, # 👈 इसे भी पास कर दिया
