@@ -84,7 +84,10 @@ def result(request, pk):
         original_image_url = obj.image.url
     except ValueError:
         pass
-
+    print("Coin:", res_json.get("coin_detected"))
+    print("Landmarks:", res_json.get("landmark_count"))
+    print("Fingers:", res_json.get("identified_fingers"))
+    print("Image Present:", bool(res_json.get("processed_image")))
     context = {
         "obj": obj,
         "original_image_url": original_image_url, # 👈 इसे भी पास कर दिया
