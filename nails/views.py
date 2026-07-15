@@ -38,7 +38,7 @@ def result(request, pk):
     processed_image_url = None
     landmark_count = 0
     result_data = {"status": "failed", "message": "FastAPI timeout or crash"}
-
+    res_json = {}
     try:
         # 1. Image ko binary mode me open karna
         with open(image_path, 'rb') as f:
