@@ -30,7 +30,14 @@ def home(request):
     return render(request, "index.html")
 def result(request, pk):
     obj = HandMeasurement.objects.get(id=pk)
-    image_path = obj.image.path
+    try:
+        image_path = obj.image.path
+    except Exception as e:
+        print("Image path error:", e)
+    if image_path and os.path.exists(image_path):
+    with open(image_path, "rb") as f:
+        file_data = f.read()
+    image_path = None
 
     # Default values setup
     coin_detected = False
@@ -93,7 +100,10 @@ def result(request, pk):
     print("Landmarks:", res_json.get("landmark_count"))
     print("Fingers:", res_json.get("identified_fingers"))
     print("Image Present:", bool(res_json.get("processed_image")))
-    context = {
+    print("====================")
+    print(original_image_url)
+    print("====================")
+        context = {
         "obj": obj,
         "original_image_url": original_image_url, # 👈 इसे भी पास कर दिया
         "identified_fingers": identified_fingers,
