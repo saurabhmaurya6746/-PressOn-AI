@@ -34,7 +34,7 @@ def result(request, pk):
         image_path = obj.image.path
     except Exception as e:
         print("Image path error:", e)
-    if image_path and os.path.exists(image_path):
+    # if image_path and os.path.exists(image_path):
     with open(image_path, "rb") as f:
         file_data = f.read()
     image_path = None
