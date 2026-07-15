@@ -50,6 +50,8 @@ def result(request, pk):
 
         # 🚀 timeout को 60 से घटाकर 25 सेकंड करो ताकि Gunicorn खुद किल न हो
         response = requests.post(FASTAPI_URL, files=files, timeout=25)
+        print(response.status_code)
+        print(response.text)
         
         print(f"DEBUG: FastAPI Response Status Code: {response.status_code}")
         
